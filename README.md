@@ -1,49 +1,168 @@
-# Getting Started with Create React App
+# BharatBill — GST-ready invoicing in INR
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+An India-first invoicing and client payments system for freelancers and small businesses. Create invoices, track payments (incl. UPI/UTR), share PDFs with GSTIN, and give clients a portal to view and update payment status.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+### 🎯 Core Functionality
+- **User Management**: Separate dashboards for freelancers and businesses
+- **Invoice Creation**: Professional invoice generation with customizable templates
+- **Client Management**: Complete client database with contact information
+- **Payment Tracking**: Monitor payments, due dates, and outstanding amounts
+- **Dashboard Analytics**: Revenue insights, charts, and performance metrics
+- **PDF Generation**: Export invoices to PDF format
+- **Email Integration**: Send invoices directly to clients
+- **Recurring Invoices**: Set up automatic recurring billing
 
-### `npm start`
+### 💼 For Freelancers
+- Personal branding with logo upload
+- Hourly rate tracking
+- Skills and profession management
+- Simple client management
+- Quick invoice generation
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### 🏢 For Businesses
+- Company information management
+- Multiple user roles
+- Advanced client management
+- Business analytics
+- Tax management
+- Bank details integration
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### 📊 Analytics & Reports
+- Monthly/quarterly revenue charts
+- Invoice status breakdown
+- Client analytics
+- Overdue tracking
+- Payment history
+- Export capabilities
 
-### `npm test`
+## Tech Stack
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Frontend
+- **React 18** - Modern UI library
+- **React Router** - Navigation and routing
+- **React Hook Form** - Form management
+- **TanStack Query** - Server state management
+- **Tailwind CSS** - Utility-first CSS framework
+- **Recharts** - Data visualization
+- **React Icons** - Icon library
+- **React Hot Toast** - Notifications
+- **Date-fns** - Date manipulation
+- **Axios** - HTTP client
 
-### `npm run build`
+### Backend
+- **Node.js** - Runtime environment
+- **Express.js** - Web framework
+- **MongoDB** - Database
+- **Mongoose** - ODM for MongoDB
+- **JWT** - Authentication
+- **Bcrypt** - Password hashing
+- **Multer** - File upload handling
+- **Nodemailer** - Email functionality
+- **PDF-lib** - PDF generation
+- **Puppeteer** - Web scraping and PDF generation
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Project Structure
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```
+invoice/
+├── backend/                 # Node.js backend
+│   ├── models/             # Database models
+│   ├── routes/             # API routes
+│   ├── middleware/         # Custom middleware
+│   └── server.js           # Entry point
+├── src/                    # React frontend
+│   ├── components/         # Reusable components
+│   ├── pages/              # Page components
+│   ├── context/            # React context
+│   ├── utils/              # Utility functions
+│   └── App.js              # Main app component
+└── public/                 # Static assets
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Setup Instructions
 
-### `npm run eject`
+### Prerequisites
+- Node.js (v16 or higher)
+- MongoDB (local or MongoDB Atlas)
+- npm or yarn package manager
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Backend Setup
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+1. **Navigate to backend directory**
+   ```bash
+   cd backend
+   ```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+3. **Environment Configuration**
+   Create a `.env` file in the backend directory with your MongoDB connection and other settings.
 
-## Learn More
+4. **Start the backend server**
+   ```bash
+   npm run dev
+   ```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Frontend Setup
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+1. **Install dependencies**
+   ```bash
+   npm install --legacy-peer-deps
+   ```
+
+2. **Start the development server**
+   ```bash
+   npm start
+   ```
+
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `GET /api/auth/me` - Get current user
+
+### Clients
+- `GET /api/clients` - Get all clients
+- `POST /api/clients` - Create new client
+- `PUT /api/clients/:id` - Update client
+- `DELETE /api/clients/:id` - Delete client
+
+### Invoices
+- `GET /api/invoices` - Get all invoices
+- `POST /api/invoices` - Create new invoice
+- `PUT /api/invoices/:id` - Update invoice
+- `DELETE /api/invoices/:id` - Delete invoice
+- `POST /api/invoices/:id/payment` - Record payment
+
+### Dashboard
+- `GET /api/dashboard/overview` - Dashboard overview data
+- `GET /api/dashboard/analytics/revenue` - Revenue analytics
+
+## Getting Started
+
+1. Clone the repository
+2. Install dependencies for both frontend and backend
+3. Set up MongoDB database
+4. Configure environment variables
+5. Start both servers
+6. Register as either a freelancer or business user
+7. Start creating invoices!
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Open a Pull Request
+
+Built with ❤️ for freelancers and small businesses worldwide.
 
 ### Code Splitting
 

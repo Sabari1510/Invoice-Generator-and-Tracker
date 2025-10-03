@@ -1,0 +1,31 @@
+.sidebar {
+  width: 280px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.mobile-menu-btn {
+  transition: all 0.2s ease;
+}
+
+.mobile-menu-btn:hover {
+  background-color: #f3f4f6;
+}
+
+.nav-link {
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.nav-link:hover {
+  transform: translateX(4px);
+}
+
+.nav-link.active {
+  background: linear-gradient(90deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+@media (min-width: 1024px) {
+  .mobile-menu-btn {
+    display: none;
+  }
+}

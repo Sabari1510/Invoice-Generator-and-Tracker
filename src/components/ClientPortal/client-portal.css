@@ -1,0 +1,33 @@
+.client-sidebar {
+  /* height full; let utility classes control 'top' */
+  height: 100vh;
+}
+.client-sidebar.mobile-open {
+  /* when mobile menu is open, shift below the 48px topbar (h-12) */
+  height: calc(100vh - 3rem);
+}
+.client-sidebar .nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #374151;
+  text-decoration: none;
+}
+.client-sidebar .nav-link:hover {
+  background: #f9fafb;
+}
+.client-sidebar .nav-link.active {
+  background: linear-gradient(90deg, #eef2ff 0%, #e0e7ff 100%);
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+/* Main content spacing next to sidebar on large screens */
+@media (min-width: 1024px) {
+  .client-main,
+  .lg\:ml-64 {
+    margin-left: 16rem; /* 64 * 0.25rem */
+  }
+}

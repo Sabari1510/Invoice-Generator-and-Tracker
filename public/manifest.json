@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "BharatBill",
+  "name": "BharatBill — GST-ready invoicing in INR",
   "icons": [
     {
       "src": "favicon.ico",

@@ -1,0 +1,15 @@
+{
+  "name": "invoice-app",
+  "version": "1.0.0",
+  "description": "Invoice Generator and Tracker - Full Stack Application",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd backend && npm run dev",
+    "client": "cd . && npm start",
+    "install-all": "npm install && cd backend && npm install",
+    "build": "npm run build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
