@@ -19,6 +19,8 @@ const InvoiceForm = () => {
   const [templates, setTemplates] = useState([]);
   const [products, setProducts] = useState([]);
   const [productId, setProductId] = useState('');
+  const [productQty, setProductQty] = useState(1);
+  const [productMessage, setProductMessage] = useState('');
   const [saving, setSaving] = useState(false);
 
   const {
@@ -119,8 +121,40 @@ const InvoiceForm = () => {
     if (!productId) return;
     const p = products.find(x => x._id === productId);
     if (!p) return;
-    append({ description: p.name, quantity: 1, rate: p.rate, taxRate: p.taxRate || 0 });
+    const qty = Number(productQty) || 1;
+    // Prevent adding if product out of stock
+    if (typeof p.quantity === 'number' && p.quantity <= 0) {
+      setProductMessage('Cannot add product: out of stock');
+      setTimeout(() => setProductMessage(''), 3000);
+      return;
+    }
+    // Prevent adding if requested qty exceeds stock (if stock provided)
+    if (typeof p.quantity === 'number' && qty > p.quantity) {
+      setProductMessage(`Requested quantity (${qty}) exceeds stock (${p.quantity})`);
+      setTimeout(() => setProductMessage(''), 3000);
+      return;
+    }
+
+    // If product already exists in items (by productId), increment quantity
+    const existingIndex = (items || []).findIndex(it => it.productId === productId);
+    if (existingIndex > -1) {
+      const existing = items[existingIndex];
+      const newQty = Number(existing.quantity || 0) + qty;
+      // ensure not exceeding stock
+      if (typeof p.quantity === 'number' && newQty > p.quantity) {
+        setProductMessage(`Total quantity (${newQty}) exceeds stock (${p.quantity})`);
+        setTimeout(() => setProductMessage(''), 3000);
+        return;
+      }
+      setValue(`items.${existingIndex}.quantity`, newQty);
+      setValue(`items.${existingIndex}.rate`, p.rate);
+      setValue(`items.${existingIndex}.taxRate`, p.taxRate || 0);
+    } else {
+      append({ productId: p._id, description: p.name, quantity: qty, rate: p.rate, taxRate: p.taxRate || 0 });
+    }
+
     setProductId('');
+    setProductQty(1);
   };
 
   if (loading) {
@@ -149,16 +183,20 @@ const InvoiceForm = () => {
               <div className="mb-4 flex gap-2 items-end">
                 <div className="flex-1">
                   <label className="form-label">Pick a Product</label>
-                  <select className="form-input" value={productId} onChange={e=>setProductId(e.target.value)}>
-                    <option value="">-- Select product --</option>
-                    {products.map(p => (
-                      <option key={p._id} value={p._id}>{p.name} — ₹{Number(p.rate).toFixed(2)} ({Number(p.taxRate||0)}%)</option>
-                    ))}
-                  </select>
+                  <div className="flex gap-2">
+                    <select className="form-input" value={productId} onChange={e=>setProductId(e.target.value)}>
+                      <option value="">-- Select product --</option>
+                      {products.map(p => (
+                        <option key={p._id} value={p._id}>{p.name} — ₹{Number(p.rate).toFixed(2)} ({Number(p.taxRate||0)}%) {typeof p.quantity === 'number' ? `— stock: ${p.quantity}` : ''}</option>
+                      ))}
+                    </select>
+                    <input type="number" min={1} className="form-input w-24" value={productQty} onChange={e=>setProductQty(e.target.value)} />
+                  </div>
                 </div>
                 <button type="button" onClick={addProductLine} className="px-3 py-2 bg-gray-100 rounded-lg border">Add Line</button>
                 <a href="/settings/products" className="text-sm text-blue-600 underline">Manage products</a>
               </div>
+              {productMessage && <div className="text-sm text-red-600 mb-2">{productMessage}</div>}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="form-label">Client</label>

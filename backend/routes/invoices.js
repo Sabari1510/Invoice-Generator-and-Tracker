@@ -117,6 +117,29 @@ router.post('/', auth, [
       };
     });
 
+    // Validate product stock and decrement quantities where applicable
+    try {
+      const Product = require('../models/Product');
+      for (const it of items) {
+        if (it.productId) {
+          const prod = await Product.findOne({ _id: it.productId, userId: req.user.id });
+          if (!prod) {
+            return res.status(400).json({ message: `Product not found: ${it.description}` });
+          }
+          const available = typeof prod.quantity === 'number' ? prod.quantity : null;
+          if (available !== null) {
+            if (available <= 0) return res.status(400).json({ message: `Product out of stock: ${prod.name}` });
+            if (it.quantity > available) return res.status(400).json({ message: `Insufficient stock for ${prod.name}. Available: ${available}` });
+            prod.quantity = available - Number(it.quantity);
+            await prod.save();
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Product stock validation error:', err);
+      return res.status(500).json({ message: 'Server error validating product stock' });
+    }
+
     const discountAmount = req.body.discountAmount || 0;
     const totalAmount = subtotal + totalTaxAmount - discountAmount;
 
