@@ -86,6 +86,9 @@ const clientSchema = new mongoose.Schema({
 // Index for better query performance
 clientSchema.index({ userId: 1, email: 1 });
 
+// Enforce uniqueness of client taxId (GSTIN) when provided
+clientSchema.index({ taxId: 1 }, { unique: true, sparse: true });
+
 // Hash client password before saving if modified (single hook)
 clientSchema.pre('save', async function(next) {
   if (!this.isModified('password') || !this.password) return next();

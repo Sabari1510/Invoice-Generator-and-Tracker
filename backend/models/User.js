@@ -92,6 +92,9 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
+// Add index to enforce unique business GST/taxId when provided
+userSchema.index({ 'businessInfo.taxId': 1 }, { unique: true, sparse: true });
+
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();

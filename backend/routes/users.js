@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const Client = require('../models/Client');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
@@ -62,8 +63,52 @@ router.put('/business-info', auth, async (req, res) => {
       return res.status(400).json({ message: 'This endpoint is only for business users' });
     }
 
+    const normalizeTax = (s) => s ? String(s).replace(/\s+/g, '').toUpperCase() : null;
+    const isValidGst = (v) => /^[0-9A-Z]{15}$/.test(v);
+    const normalizeBusinessName = (s) => s ? String(s).trim() : null;
+    const escapeRegex = (s='') => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // If taxId is being updated, ensure uniqueness across users and clients
+    if (req.body && req.body.taxId) {
+      const newTax = normalizeTax(req.body.taxId);
+      const currentTax = normalizeTax(user.businessInfo && user.businessInfo.taxId);
+      if (!isValidGst(newTax)) {
+        return res.status(400).json({ message: 'GST / Tax ID must be 15 alphanumeric characters' });
+      }
+      if (newTax !== currentTax) {
+        const existingUser = await User.findOne({ 'businessInfo.taxId': newTax });
+        if (existingUser) {
+          return res.status(400).json({ message: 'GST / Tax ID already in use by another account' });
+        }
+        const existingClient = await Client.findOne({ taxId: newTax });
+        if (existingClient) {
+          return res.status(400).json({ message: 'GST / Tax ID already in use by another account' });
+        }
+        req.body.taxId = newTax;
+      }
+    }
+
+    // Prevent duplicate business name / business email across users
+    if (req.body && req.body.businessName) {
+      const bn = normalizeBusinessName(req.body.businessName);
+      const rx = new RegExp('^' + escapeRegex(bn) + '$', 'i');
+      const existingByName = await User.findOne({ 'businessInfo.businessName': rx, _id: { $ne: user._id } });
+      if (existingByName) return res.status(400).json({ message: 'A business with the same name is already registered' });
+    }
+    if (req.body && req.body.businessEmail) {
+      const existingByBEmail = await User.findOne({ 'businessInfo.businessEmail': req.body.businessEmail, _id: { $ne: user._id } });
+      if (existingByBEmail) return res.status(400).json({ message: 'Business email already in use by another account' });
+    }
+
     user.businessInfo = { ...user.businessInfo, ...req.body };
-    await user.save();
+    try {
+      await user.save();
+    } catch (err) {
+      if (err && err.code === 11000) {
+        return res.status(400).json({ message: 'Duplicate value error: GST already in use' });
+      }
+      throw err;
+    }
 
     res.json({ message: 'Business information updated successfully', user });
   } catch (error) {

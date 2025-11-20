@@ -9,7 +9,7 @@ const ClientSignup = () => {
   const presetBusinessEmail = searchParams.get('businessEmail') || searchParams.get('biz') || '';
   const isValidObjectId = (v) => /^[a-fA-F0-9]{24}$/.test(v || '');
   const presetIsValid = isValidObjectId(presetBusinessIdRaw);
-  const { register, handleSubmit, watch, formState: { errors } } = useForm({
+  const { register, handleSubmit, watch, formState: { errors }, setValue } = useForm({
     defaultValues: { businessUserId: presetIsValid ? presetBusinessIdRaw : '', businessEmail: presetBusinessEmail || '' },
   });
   const [submitted, setSubmitted] = useState(false);
@@ -143,7 +143,18 @@ const ClientSignup = () => {
           <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm">Tax ID (optional)</label>
-              <input className="w-full border rounded-lg px-3 py-2" {...register('taxId')} />
+              <input
+                className="w-full border rounded-lg px-3 py-2"
+                placeholder="27ABCDE1234F1Z5"
+                value={watch('taxId') || ''}
+                onChange={e => {
+                  const raw = String(e.target.value || '');
+                  const filtered = raw.replace(/[^0-9a-zA-Z]/g, '').toUpperCase().slice(0,15);
+                  setValue('taxId', filtered);
+                }}
+                {...register('taxId', { validate: v => !v || /^[0-9A-Z]{15}$/.test(String(v)) || 'GST must be 15 alphanumeric characters' })}
+              />
+              {errors.taxId && <p className="text-sm text-red-600">{errors.taxId.message}</p>}
             </div>
             <div>
               <label className="text-sm">Street</label>

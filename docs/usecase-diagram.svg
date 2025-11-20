@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <style>
+    .actor { font: bold 14px sans-serif; }
+    .oval { fill: #f8f9fa; stroke: #2b6cb0; stroke-width: 2; }
+    .label { font: 13px sans-serif; fill: #0b1220; }
+    .line { stroke: #2b6cb0; stroke-width: 1.6; }
+    .sectionTitle { font: bold 16px sans-serif; fill: #1f2937; }
+  </style>
+
+  <!-- Titles -->
+  <text x="60" y="30" class="sectionTitle">Use Case Diagram — Invoice Generator & Tracker</text>
+
+  <!-- Actors (left) -->
+  <g id="actors">
+    <g transform="translate(40,120)">
+      <text x="0" y="0" class="actor">Admin</text>
+      <rect x="-10" y="10" width="50" height="70" rx="8" ry="8" fill="#fff" stroke="#94a3b8"/>
+      <text x="10" y="45" class="label">(Internal)</text>
+    </g>
+
+    <g transform="translate(40,300)">
+      <text x="0" y="0" class="actor">Staff</text>
+      <rect x="-10" y="10" width="50" height="70" rx="8" ry="8" fill="#fff" stroke="#94a3b8"/>
+      <text x="8" y="45" class="label">(Business User)</text>
+    </g>
+
+    <g transform="translate(40,480)">
+      <text x="0" y="0" class="actor">Client</text>
+      <rect x="-10" y="10" width="50" height="70" rx="8" ry="8" fill="#fff" stroke="#94a3b8"/>
+      <text x="6" y="45" class="label">(Portal User)</text>
+    </g>
+  </g>
+
+  <!-- Use cases (center/right) -->
+  <g id="usecases">
+    <!-- Authentication -->
+    <text x="320" y="60" class="sectionTitle">Authentication</text>
+    <ellipse cx="520" cy="60" rx="140" ry="28" class="oval"/>
+    <text x="440" y="65" class="label">Login / Register</text>
+
+    <!-- Invoice Management -->
+    <text x="320" y="140" class="sectionTitle">Invoice Management</text>
+    <ellipse cx="520" cy="180" rx="140" ry="28" class="oval"/>
+    <text x="440" y="185" class="label">Create / Edit Invoice</text>
+
+    <ellipse cx="520" cy="230" rx="140" ry="28" class="oval"/>
+    <text x="450" y="235" class="label">Send Invoice / Email</text>
+
+    <ellipse cx="520" cy="280" rx="140" ry="28" class="oval"/>
+    <text x="465" y="285" class="label">View / Download Invoice (PDF)</text>
+
+    <ellipse cx="520" cy="330" rx="140" ry="28" class="oval"/>
+    <text x="470" y="335" class="label">Record Payment</text>
+
+    <!-- Client Management -->
+    <text x="320" y="400" class="sectionTitle">Client & Requests</text>
+    <ellipse cx="520" cy="440" rx="160" ry="28" class="oval"/>
+    <text x="420" y="445" class="label">Create / Manage Clients</text>
+
+    <ellipse cx="520" cy="490" rx="160" ry="28" class="oval"/>
+    <text x="430" y="495" class="label">Approve Client Signup / Profiles</text>
+
+    <ellipse cx="520" cy="540" rx="140" ry="28" class="oval"/>
+    <text x="440" y="545" class="label">View Payment Requests</text>
+
+    <!-- Settings & Products -->
+    <text x="320" y="620" class="sectionTitle">Products & Settings</text>
+    <ellipse cx="520" cy="660" rx="140" ry="28" class="oval"/>
+    <text x="450" y="665" class="label">Manage Products</text>
+
+    <ellipse cx="520" cy="710" rx="140" ry="28" class="oval"/>
+    <text x="445" y="715" class="label">Manage Templates / Settings</text>
+
+    <!-- Dashboard / Reports (right) -->
+    <ellipse cx="920" cy="180" rx="160" ry="28" class="oval"/>
+    <text x="850" y="185" class="label">View Dashboard / Analytics</text>
+  </g>
+
+  <!-- Connections lines -->
+  <!-- Admin connections -->
+  <line x1="90" y1="150" x2="380" y2="60" class="line"/>
+  <line x1="90" y1="150" x2="380" y2="180" class="line"/>
+  <line x1="90" y1="150" x2="380" y2="440" class="line"/>
+  <line x1="90" y1="150" x2="880" y2="180" class="line"/>
+
+  <!-- Staff connections -->
+  <line x1="90" y1="330" x2="380" y2="180" class="line"/>
+  <line x1="90" y1="330" x2="380" y2="230" class="line"/>
+  <line x1="90" y1="330" x2="380" y2="280" class="line"/>
+  <line x1="90" y1="330" x2="380" y2="660" class="line"/>
+
+  <!-- Client connections -->
+  <line x1="90" y1="510" x2="380" y2="230" class="line"/>
+  <line x1="90" y1="510" x2="380" y2="330" class="line"/>
+  <line x1="90" y1="510" x2="380" y2="490" class="line"/>
+  <line x1="90" y1="510" x2="380" y2="545" class="line"/>
+
+  <!-- Notes -->
+  <rect x="980" y="640" width="180" height="200" rx="10" ry="10" fill="#fff8eb" stroke="#f59e0b"/>
+  <text x="992" y="670" class="label">Legend:</text>
+  <text x="992" y="690" class="label">- Admin: system administrator</text>
+  <text x="992" y="710" class="label">- Staff: internal business user</text>
+  <text x="992" y="730" class="label">- Client: external customer / portal user</text>
+  <text x="992" y="750" class="label">- Lines: associations between actors & use cases</text>
+
+</svg>

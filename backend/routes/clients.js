@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const Client = require('../models/Client');
 const auth = require('../middleware/auth');
+const User = require('../models/User');
 
 const router = express.Router();
 
@@ -164,13 +165,32 @@ router.post('/', auth, [
       userId: req.user.id
     });
 
+      // Normalize and validate taxId if provided
+      const normalizeTax = (s) => s ? String(s).replace(/\s+/g, '').toUpperCase() : null;
+      if (req.body.taxId) {
+        const newTax = normalizeTax(req.body.taxId);
+        // Validate GST format
+        if (!/^[0-9A-Z]{15}$/.test(newTax)) return res.status(400).json({ message: 'GST / Tax ID must be 15 alphanumeric characters' });
+        // Check across users and clients
+        const existingUser = await User.findOne({ 'businessInfo.taxId': newTax });
+        if (existingUser) return res.status(400).json({ message: 'GST / Tax ID already in use by another account' });
+        const existingClientGlobal = await Client.findOne({ taxId: newTax });
+        if (existingClientGlobal) return res.status(400).json({ message: 'GST / Tax ID already in use by another account' });
+        client.taxId = newTax;
+      }
+
     // Optionally create credentials
     if (req.body.createCredentials) {
       client.password = req.body.clientPassword || Math.random().toString(36).slice(-8);
       client.isApproved = true; // directly activate if owner sets password
     }
 
-    await client.save();
+    try {
+      await client.save();
+    } catch (err) {
+      if (err && err.code === 11000) return res.status(400).json({ message: 'Duplicate value error: GST already in use' });
+      throw err;
+    }
     res.status(201).json({ message: 'Client created successfully', client });
   } catch (error) {
     console.error('Create client error:', error);
@@ -209,10 +229,22 @@ router.put('/:id', auth, [
     }
 
     // Update client fields (non-credential)
-    const updatable = ['name','email','phone','company','address','paymentTerms','status','notes','preferredPaymentMethod'];
+    const updatable = ['name','email','phone','company','address','paymentTerms','status','notes','preferredPaymentMethod','taxId'];
     updatable.forEach(key => {
       if (req.body[key] !== undefined) client[key] = key === 'email' ? req.body[key]?.toLowerCase() : req.body[key];
     });
+
+    // If taxId provided and changed, normalize and ensure uniqueness
+    if (req.body.taxId && req.body.taxId !== client.taxId) {
+      const normalizeTax = (s) => s ? String(s).replace(/\s+/g, '').toUpperCase() : null;
+      const newTax = normalizeTax(req.body.taxId);
+      if (!/^[0-9A-Z]{15}$/.test(newTax)) return res.status(400).json({ message: 'GST / Tax ID must be 15 alphanumeric characters' });
+      const existingUser = await User.findOne({ 'businessInfo.taxId': newTax });
+      if (existingUser) return res.status(400).json({ message: 'GST / Tax ID already in use by another account' });
+      const existingClientGlobal = await Client.findOne({ taxId: newTax, _id: { $ne: req.params.id } });
+      if (existingClientGlobal) return res.status(400).json({ message: 'GST / Tax ID already in use by another account' });
+      client.taxId = newTax;
+    }
 
     // Optionally update credentials and reactivate
     if (req.body.createCredentials) {
@@ -221,7 +253,12 @@ router.put('/:id', auth, [
       client.status = 'active';
     }
 
-    await client.save();
+    try {
+      await client.save();
+    } catch (err) {
+      if (err && err.code === 11000) return res.status(400).json({ message: 'Duplicate value error: GST already in use' });
+      throw err;
+    }
     res.json({ message: 'Client updated successfully', client });
   } catch (error) {
     console.error('Update client error:', error);

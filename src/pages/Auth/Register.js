@@ -15,7 +15,8 @@ const Register = () => {
     register,
     handleSubmit,
     formState: { errors },
-    watch
+    watch,
+    setValue
   } = useForm();
 
   const password = watch('password');
@@ -141,13 +142,17 @@ const Register = () => {
                     errors.password ? 'border-red-300' : 'border-gray-300'
                   } placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                   placeholder="Password"
-                  {...register('password', {
-                    required: 'Password is required',
-                    minLength: {
-                      value: 6,
-                      message: 'Password must be at least 6 characters'
-                    }
-                  })}
+                    {...register('password', {
+                      required: 'Password is required',
+                      minLength: {
+                        value: 8,
+                        message: 'Password must be at least 8 characters'
+                      },
+                      pattern: {
+                        value: /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/, 
+                        message: 'Password must contain letters and numbers'
+                      }
+                    })}
                 />
                 <button
                   type="button"
@@ -209,21 +214,64 @@ const Register = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-700 mb-1">Business Email</label>
-                  <input className="form-input" type="email" placeholder="billing@company.com" {...register('businessEmail')} />
+                  <input
+                    className="form-input"
+                    type="email"
+                    placeholder="billing@company.com"
+                    value={watch('businessEmail') || ''}
+                    onChange={e => setValue('businessEmail', String(e.target.value || '').toLowerCase())}
+                    {...register('businessEmail', {
+                      validate: v => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v)) || 'Please enter a valid business email'
+                    })}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm text-gray-700 mb-1">Business Phone</label>
-                  <input className="form-input" placeholder="+91 98765 43210" {...register('businessPhone')} />
+                  <input
+                    className="form-input"
+                    placeholder="9876543210"
+                    value={watch('businessPhone') || ''}
+                    onChange={e => {
+                      const raw = String(e.target.value || '');
+                      const digits = raw.replace(/\D/g, '').slice(0, 10);
+                      setValue('businessPhone', digits);
+                    }}
+                    {...register('businessPhone', {
+                      validate: v => !v || /^\d{10}$/.test(String(v)) || 'Phone must be 10 digits'
+                    })}
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-700 mb-1">GSTIN / Tax ID</label>
-                  <input className="form-input" placeholder="27ABCDE1234F1Z5" {...register('taxId')} />
+                  {/* normalize: remove non-alphanumeric, uppercase; client-side validate length 15 */}
+                  <input
+                    className="form-input"
+                    placeholder="27ABCDE1234F1Z5"
+                    value={watch('taxId') || ''}
+                    onChange={e => {
+                      const raw = String(e.target.value || '');
+                      const filtered = raw.replace(/[^0-9a-zA-Z]/g, '').toUpperCase().slice(0, 15);
+                      setValue('taxId', filtered);
+                    }}
+                    {...register('taxId', {
+                      validate: v => !v || /^[0-9A-Z]{15}$/.test(String(v)) || 'GST must be 15 alphanumeric characters'
+                    })}
+                  />
+                  {errors.taxId && <p className="mt-1 text-sm text-red-600">{errors.taxId.message}</p>}
                 </div>
                 <div>
                   <label className="block text-sm text-gray-700 mb-1">Website</label>
-                  <input className="form-input" placeholder="https://company.com" {...register('website')} />
+                  <input
+                    className="form-input"
+                    placeholder="https://company.com"
+                    value={watch('website') || ''}
+                    onChange={e => setValue('website', String(e.target.value || '').trim())}
+                    {...register('website', {
+                      validate: v => !v || /^https?:\/\/.+/i.test(String(v)) || 'Website must start with http:// or https://'
+                    })}
+                  />
                 </div>
               </div>
               <div>
@@ -232,7 +280,19 @@ const Register = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <input className="form-input" placeholder="City" {...register('businessCity')} />
                   <input className="form-input" placeholder="State" {...register('businessState')} />
-                  <input className="form-input" placeholder="PIN / ZIP" {...register('businessZip')} />
+                  <input
+                    className="form-input"
+                    placeholder="PIN / ZIP"
+                    value={watch('businessZip') || ''}
+                    onChange={e => {
+                      const raw = String(e.target.value || '');
+                      const digits = raw.replace(/\D/g, '');
+                      setValue('businessZip', digits);
+                    }}
+                    {...register('businessZip', {
+                      validate: v => !v || /^\d+$/.test(String(v)) || 'ZIP must contain only numbers'
+                    })}
+                  />
                 </div>
                 <input className="form-input mt-2" placeholder="Country" defaultValue="India" {...register('businessCountry')} />
               </div>

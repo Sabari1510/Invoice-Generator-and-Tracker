@@ -1,0 +1,67 @@
+@startuml
+left to right direction
+skinparam handwritten true
+
+actor Admin as A
+actor Staff as S
+actor Client as C
+
+rectangle "Authentication" {
+  usecase "Login / Register" as UC1
+}
+
+rectangle "Invoice Management" {
+  usecase "Create / Edit Invoice" as UC2
+  usecase "Send Invoice / Email" as UC3
+  usecase "View / Download Invoice (PDF)" as UC4
+  usecase "Record Payment" as UC5
+}
+
+rectangle "Client & Requests" {
+  usecase "Create / Manage Clients" as UC6
+  usecase "Approve Client Signup / Profiles" as UC7
+  usecase "View Payment Requests" as UC8
+}
+
+rectangle "Products & Settings" {
+  usecase "Manage Products" as UC9
+  usecase "Manage Templates / Settings" as UC10
+}
+
+rectangle "Dashboard" {
+  usecase "View Dashboard / Analytics" as UC11
+}
+
+A --> UC1
+S --> UC1
+C --> UC1
+
+A --> UC2
+S --> UC2
+C --> UC4
+
+S --> UC3
+A --> UC3
+
+S --> UC5
+C --> UC5
+
+A --> UC6
+S --> UC6
+
+A --> UC7
+C --> UC7
+
+C --> UC8
+A --> UC8
+
+S --> UC9
+A --> UC9
+
+A --> UC10
+S --> UC10
+
+A --> UC11
+S --> UC11
+
+@enduml

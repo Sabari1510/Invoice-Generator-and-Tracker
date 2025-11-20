@@ -8,6 +8,9 @@ const ProductsPage = () => {
   const [saving, setSaving] = useState(false);
   const [products, setProducts] = useState([]);
   const [form, setForm] = useState({ id: null, name: '', sku: '', rate: 0, taxRate: 0, unit: 'unit', description: '' });
+  const [skuError, setSkuError] = useState('');
+  const [rateError, setRateError] = useState('');
+  const [taxError, setTaxError] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -24,7 +27,27 @@ const ProductsPage = () => {
   const save = async () => {
     setSaving(true);
     try {
-      const payload = { name: form.name, sku: form.sku, description: form.description, rate: Number(form.rate), taxRate: Number(form.taxRate), unit: form.unit };
+      // Client-side validation: SKU must be digits-only when provided
+      if (form.sku && !/^\d+$/.test(String(form.sku))) {
+        setSkuError('SKU must contain digits only');
+        setSaving(false);
+        return;
+      }
+      // Client-side validation: rate and tax must be numeric and >= 0
+      const rateNum = Number(form.rate);
+      if (!Number.isFinite(rateNum) || rateNum < 0) {
+        setRateError('Rate must be a number >= 0');
+        setSaving(false);
+        return;
+      }
+      const taxNum = Number(form.taxRate);
+      if (!Number.isFinite(taxNum) || taxNum < 0) {
+        setTaxError('Tax must be a number >= 0');
+        setSaving(false);
+        return;
+      }
+
+      const payload = { name: form.name, sku: form.sku, description: form.description, rate: rateNum, taxRate: taxNum, unit: form.unit };
       if (form.id) await productsAPI.update(form.id, payload); else await productsAPI.create(payload);
       setForm({ id: null, name: '', sku: '', rate: 0, taxRate: 0, unit: 'unit', description: '' });
       await load();
@@ -46,9 +69,60 @@ const ProductsPage = () => {
         <div className="bg-white rounded-xl shadow p-4">
           <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
             <input className="border rounded px-3 py-2" placeholder="Name" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} />
-            <input className="border rounded px-3 py-2" placeholder="SKU" value={form.sku} onChange={e=>setForm({...form, sku:e.target.value})} />
-            <input type="number" min="0" step="0.01" className="border rounded px-3 py-2" placeholder="Rate" value={form.rate} onChange={e=>setForm({...form, rate:e.target.value})} />
-            <input type="number" min="0" step="0.01" className="border rounded px-3 py-2" placeholder="Tax %" value={form.taxRate} onChange={e=>setForm({...form, taxRate:e.target.value})} />
+            <input
+              className="border rounded px-3 py-2"
+              placeholder="SKU"
+              inputMode="numeric"
+              pattern="\d*"
+              value={form.sku}
+              onChange={e=>{
+                const raw = e.target.value || '';
+                const filtered = raw.replace(/\D+/g, '');
+                if (raw !== filtered) {
+                  setSkuError('SKU accepts digits only — non-digit characters removed');
+                  setTimeout(()=>setSkuError(''), 3000);
+                }
+                setForm({...form, sku: filtered});
+              }}
+            />
+            {skuError && <div className="text-sm text-red-600 mt-1">{skuError}</div>}
+            <input
+              className="border rounded px-3 py-2"
+              placeholder="Rate"
+              inputMode="decimal"
+              value={form.rate}
+              onChange={e=>{
+                const raw = String(e.target.value || '');
+                // allow only digits and one dot
+                let filtered = raw.replace(/[^\d.]/g, '');
+                const parts = filtered.split('.');
+                if (parts.length > 2) filtered = parts.shift() + '.' + parts.join('');
+                if (filtered !== raw) {
+                  setRateError('Rate accepts numbers only — invalid characters removed');
+                  setTimeout(()=>setRateError(''), 3000);
+                }
+                setForm({...form, rate: filtered});
+              }}
+            />
+            {rateError && <div className="text-sm text-red-600 mt-1">{rateError}</div>}
+            <input
+              className="border rounded px-3 py-2"
+              placeholder="Tax %"
+              inputMode="decimal"
+              value={form.taxRate}
+              onChange={e=>{
+                const raw = String(e.target.value || '');
+                let filtered = raw.replace(/[^\d.]/g, '');
+                const parts = filtered.split('.');
+                if (parts.length > 2) filtered = parts.shift() + '.' + parts.join('');
+                if (filtered !== raw) {
+                  setTaxError('Tax accepts numbers only — invalid characters removed');
+                  setTimeout(()=>setTaxError(''), 3000);
+                }
+                setForm({...form, taxRate: filtered});
+              }}
+            />
+            {taxError && <div className="text-sm text-red-600 mt-1">{taxError}</div>}
             <input className="border rounded px-3 py-2" placeholder="Unit" value={form.unit} onChange={e=>setForm({...form, unit:e.target.value})} />
             <button disabled={saving || !form.name} onClick={save} className="inline-flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg"><FiPlus className="mr-2" /> {form.id ? 'Update' : 'Add'}</button>
           </div>

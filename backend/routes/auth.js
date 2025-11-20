@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const Client = require('../models/Client');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
@@ -21,6 +22,11 @@ router.post('/register', [
 
     const { name, email, password, userType, businessInfo } = req.body;
 
+    const normalizeTax = (s) => s ? String(s).replace(/\s+/g, '').toUpperCase() : null;
+    const normalizeBusinessName = (s) => s ? String(s).trim() : null;
+    const escapeRegex = (s='') => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const isValidGst = (v) => /^[0-9A-Z]{15}$/.test(v);
+
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -31,6 +37,37 @@ router.post('/register', [
     if (userType === 'business') {
       if (!businessInfo || !businessInfo.businessName || !String(businessInfo.businessName).trim()) {
         return res.status(400).json({ message: 'Company name is required for business signup' });
+      }
+    }
+
+    // If taxId provided, ensure uniqueness across users and clients
+    if (businessInfo && businessInfo.taxId) {
+      const normalizedTax = normalizeTax(businessInfo.taxId);
+      if (!isValidGst(normalizedTax)) {
+        return res.status(400).json({ message: 'GST / Tax ID must be 15 alphanumeric characters' });
+      }
+      const existingUserWithTax = await User.findOne({ 'businessInfo.taxId': normalizedTax });
+      if (existingUserWithTax) {
+        return res.status(400).json({ message: 'GST / Tax ID already in use by another account' });
+      }
+      const existingClientWithTax = await Client.findOne({ taxId: normalizedTax });
+      if (existingClientWithTax) {
+        return res.status(400).json({ message: 'GST / Tax ID already in use by another account' });
+      }
+      businessInfo.taxId = normalizedTax;
+    }
+
+    // Prevent duplicate business name/details across registered users
+    if (businessInfo && businessInfo.businessName) {
+      const bn = normalizeBusinessName(businessInfo.businessName);
+      const rx = new RegExp('^' + escapeRegex(bn) + '$', 'i');
+      const existingByName = await User.findOne({ 'businessInfo.businessName': rx });
+      if (existingByName) {
+        return res.status(400).json({ message: 'A business with the same name is already registered' });
+      }
+      if (businessInfo.businessEmail) {
+        const existingByBEmail = await User.findOne({ 'businessInfo.businessEmail': businessInfo.businessEmail });
+        if (existingByBEmail) return res.status(400).json({ message: 'Business email already in use by another account' });
       }
     }
 
@@ -56,7 +93,15 @@ router.post('/register', [
       } : undefined
     });
 
-    await user.save();
+    try {
+      await user.save();
+    } catch (err) {
+      // Handle duplicate key error (e.g., unique index on taxId/email)
+      if (err && err.code === 11000) {
+        return res.status(400).json({ message: 'Duplicate value error: GST/Email already in use' });
+      }
+      throw err;
+    }
 
     // Create JWT token
     const token = jwt.sign(
