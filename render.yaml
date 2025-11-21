@@ -1,0 +1,18 @@
+# Render service configuration for the backend service
+# This file instructs Render to build and run the Node backend located in the
+# `backend/` directory of this repository. Do NOT add secrets here; use the
+# Render dashboard to set environment variables.
+
+services:
+  - type: web
+    name: invoice-backend
+    env: node
+    branch: main
+    plan: free
+    region: oregon
+    autoDeploy: true
+    buildCommand: cd backend; npm install
+    startCommand: cd backend; npm run start
+    # Optional: adjust instanceSize/disk as needed for your workload
+    # instanceType: nano
+    # disk: 0
