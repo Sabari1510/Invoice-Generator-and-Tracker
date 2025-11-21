@@ -155,8 +155,8 @@ router.get('/invoices', clientAuth, async (req, res) => {
     const peers = await Client.find({ userId: businessId, email }).select('_id');
     const clientIds = peers.length ? peers.map(c => c._id) : [req.client._id];
 
-    // Include draft so clients can see invoices even before marked as sent
-    const allowedStatuses = ['draft', 'sent', 'viewed', 'overdue', 'paid'];
+    // Clients should only see invoices which have been sent (not drafts)
+    const allowedStatuses = ['sent', 'viewed', 'overdue', 'paid'];
     const invoices = await Invoice.find({ userId: businessId, clientId: { $in: clientIds }, status: { $in: allowedStatuses } })
       .populate('userId', 'businessInfo name')
       .sort({ createdAt: -1 });

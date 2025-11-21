@@ -27,7 +27,7 @@ router.post('/', auth, [
   body('rate').isFloat({ min: 0 }).withMessage('Rate must be >= 0'),
   body('taxRate').optional().isFloat({ min: 0 }),
   body('quantity').optional().isInt({ min: 0 }).withMessage('Quantity must be an integer >= 0'),
-  body('sku').optional().matches(/^\d+$/).withMessage('SKU must contain digits only')
+  body('sku').optional({ checkFalsy: true }).matches(/^\d+$/).withMessage('SKU must contain digits only')
 ], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
@@ -46,7 +46,7 @@ router.post('/', auth, [
 // Update product
 router.put('/:id', auth, [
   body('quantity').optional().isInt({ min: 0 }).withMessage('Quantity must be an integer >= 0'),
-  body('sku').optional().matches(/^\d+$/).withMessage('SKU must contain digits only')
+  body('sku').optional({ checkFalsy: true }).matches(/^\d+$/).withMessage('SKU must contain digits only')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);

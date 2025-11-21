@@ -85,8 +85,71 @@ app.use('*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+// Handle server errors (e.g. EADDRINUSE)
+server.on('error', (err) => {
+  console.error('Server error:', err);
+  if (err && err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use.`);
+    // Exit so a process manager (or developer) can restart it cleanly
+    process.exit(1);
+  }
+});
+
+// Graceful shutdown helper
+const gracefulShutdown = async (signal) => {
+  try {
+    console.log(`Received ${signal}. Shutting down gracefully...`);
+    server.close(async () => {
+      try {
+        console.log('HTTP server closed');
+        // mongoose v6+ close returns a Promise and no longer accepts a callback
+        await mongoose.connection.close();
+        console.log('MongoDB connection closed');
+        process.exit(0);
+      } catch (err) {
+        console.error('Error closing MongoDB connection', err);
+        process.exit(1);
+      }
+    });
+    // Force exit if not closed in time
+    setTimeout(() => {
+      console.error('Could not close connections in time, forcing shutdown');
+      process.exit(1);
+    }, 10000).unref();
+  } catch (e) {
+    console.error('Error during graceful shutdown', e);
+    process.exit(1);
+  }
+};
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+// Catch unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Recommended: log and exit. A process manager should restart the process.
+  // Give a short delay to flush logs then exit.
+  setTimeout(() => process.exit(1), 1000).unref();
+});
+
+// Catch uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception thrown:', err);
+  // Attempt graceful shutdown
+  try {
+    server.close(() => {
+      mongoose.connection.close(false, () => process.exit(1));
+    });
+    setTimeout(() => process.exit(1), 1000).unref();
+  } catch (e) {
+    console.error('Error during uncaughtException shutdown', e);
+    process.exit(1);
+  }
 });
 
 module.exports = app;

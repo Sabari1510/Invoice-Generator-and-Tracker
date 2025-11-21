@@ -40,7 +40,7 @@ router.get('/overview', auth, async (req, res) => {
       const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - i + 1, 1);
       
       const monthInvoices = invoices.filter(inv => {
-        const invoiceDate = new Date(inv.createdAt);
+        const invoiceDate = new Date(inv.issueDate || inv.createdAt);
         return invoiceDate >= date && invoiceDate < nextMonth;
       });
 
@@ -133,7 +133,7 @@ router.get('/analytics/revenue', auth, async (req, res) => {
         const monthEnd = new Date(year, month + 1, 1);
         
         const monthInvoices = invoices.filter(inv => {
-          const invoiceDate = new Date(inv.createdAt);
+          const invoiceDate = new Date(inv.issueDate || inv.createdAt);
           return invoiceDate >= monthStart && invoiceDate < monthEnd;
         });
 
@@ -155,7 +155,7 @@ router.get('/analytics/revenue', auth, async (req, res) => {
 
       quarters.forEach(quarter => {
         const quarterInvoices = invoices.filter(inv => {
-          const month = new Date(inv.createdAt).getMonth();
+          const month = new Date(inv.issueDate || inv.createdAt).getMonth();
           return quarter.months.includes(month);
         });
 
@@ -202,7 +202,7 @@ router.get('/analytics/clients', auth, async (req, res) => {
           ? clientInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0) / clientInvoices.length 
           : 0,
         lastInvoiceDate: clientInvoices.length > 0 
-          ? Math.max(...clientInvoices.map(inv => new Date(inv.createdAt))) 
+          ? Math.max(...clientInvoices.map(inv => new Date(inv.issueDate || inv.createdAt))) 
           : null
       };
     });

@@ -81,7 +81,16 @@ router.get('/:id', auth, async (req, res) => {
 // Create a new invoice
 router.post('/', auth, [
   body('clientId').isMongoId().withMessage('Valid client ID is required'),
+  body('issueDate').isISO8601().withMessage('Valid issue date is required'),
   body('dueDate').isISO8601().withMessage('Valid due date is required'),
+  body('dueDate').custom((dueDate, { req }) => {
+    const issue = req.body.issueDate ? new Date(req.body.issueDate) : null;
+    const due = new Date(dueDate);
+    if (issue && due < issue) {
+      throw new Error('Due date must be the same or after issue date');
+    }
+    return true;
+  }),
   body('items').isArray({ min: 1 }).withMessage('At least one item is required'),
   body('items.*.description').trim().isLength({ min: 1 }).withMessage('Item description is required'),
   body('items.*.quantity').isFloat({ min: 0.01 }).withMessage('Item quantity must be greater than 0'),
@@ -117,28 +126,7 @@ router.post('/', auth, [
       };
     });
 
-    // Validate product stock and decrement quantities where applicable
-    try {
-      const Product = require('../models/Product');
-      for (const it of items) {
-        if (it.productId) {
-          const prod = await Product.findOne({ _id: it.productId, userId: req.user.id });
-          if (!prod) {
-            return res.status(400).json({ message: `Product not found: ${it.description}` });
-          }
-          const available = typeof prod.quantity === 'number' ? prod.quantity : null;
-          if (available !== null) {
-            if (available <= 0) return res.status(400).json({ message: `Product out of stock: ${prod.name}` });
-            if (it.quantity > available) return res.status(400).json({ message: `Insufficient stock for ${prod.name}. Available: ${available}` });
-            prod.quantity = available - Number(it.quantity);
-            await prod.save();
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Product stock validation error:', err);
-      return res.status(500).json({ message: 'Server error validating product stock' });
-    }
+    // Note: stock validation/decrement removed per configuration — invoices won't alter product stock
 
     const discountAmount = req.body.discountAmount || 0;
     const totalAmount = subtotal + totalTaxAmount - discountAmount;
@@ -175,7 +163,23 @@ router.post('/', auth, [
       invoiceNumber
     });
 
-    await invoice.save();
+    // Save invoice with retry on duplicate invoiceNumber (race condition when counting)
+    try {
+      await invoice.save();
+    } catch (err) {
+      if (err && err.code === 11000 && String(err.message).includes('invoiceNumber')) {
+        try {
+          // fallback to timestamp-based invoice number to avoid collisions
+          invoice.invoiceNumber = `${prefix}-${Date.now()}`;
+          await invoice.save();
+        } catch (err2) {
+          console.error('Create invoice error (retry failed):', err2);
+          return res.status(500).json({ message: 'Server error creating invoice' });
+        }
+      } else {
+        throw err;
+      }
+    }
     
     // Update client totals
     client.totalInvoiced += totalAmount;
@@ -193,6 +197,17 @@ router.post('/', auth, [
 // Update an invoice
 router.put('/:id', auth, async (req, res) => {
   try {
+    // If updating dates, ensure they are valid and dueDate is not before issueDate
+    if (req.body.issueDate || req.body.dueDate) {
+      if (req.body.issueDate && isNaN(new Date(req.body.issueDate))) return res.status(400).json({ message: 'Invalid issue date' });
+      if (req.body.dueDate && isNaN(new Date(req.body.dueDate))) return res.status(400).json({ message: 'Invalid due date' });
+      if (req.body.issueDate && req.body.dueDate) {
+        const issue = new Date(req.body.issueDate);
+        const due = new Date(req.body.dueDate);
+        if (due < issue) return res.status(400).json({ message: 'Due date must be the same or after issue date' });
+      }
+    }
+
     const invoice = await Invoice.findOne({ _id: req.params.id, userId: req.user.id });
     
     if (!invoice) {

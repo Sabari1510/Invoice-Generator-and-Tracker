@@ -21,6 +21,7 @@ const InvoiceForm = () => {
   const [productId, setProductId] = useState('');
   const [productQty, setProductQty] = useState(1);
   const [productMessage, setProductMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [saving, setSaving] = useState(false);
 
   const {
@@ -84,11 +85,17 @@ const InvoiceForm = () => {
           setValue('clientId', clientIdFromQuery);
         }
       })
+      .catch(err => {
+        console.error('Error loading invoice form data:', err);
+        // surface a friendly message for the UI
+        setErrorMessage((err && err.response && (err.response.data?.message || JSON.stringify(err.response.data))) || 'Failed to load form data');
+      })
       .finally(() => setLoading(false));
   }, [isEdit, params.id, reset, searchParams, setValue]);
 
   const onSubmit = async (data) => {
     setSaving(true);
+    setErrorMessage('');
     try {
       const payload = {
         ...data,
@@ -112,6 +119,28 @@ const InvoiceForm = () => {
       if (isEdit) navigate(`/invoices/${params.id}`);
     } catch (e) {
       console.error('Save invoice error:', e);
+      // Try to show server validation message(s) to the user instead of leaving the error uncaught
+      if (e && e.response) {
+        const resp = e.response;
+        // If server sent validation errors array or object, stringify a friendly message
+        if (resp.data) {
+          if (resp.data.errors) {
+            // express-validator style
+            try {
+              const msgs = resp.data.errors.map(it => it.msg).join('; ');
+              setErrorMessage(msgs);
+            } catch (_) {
+              setErrorMessage(JSON.stringify(resp.data.errors));
+            }
+          } else if (resp.data.message) {
+            setErrorMessage(resp.data.message);
+          } else {
+            setErrorMessage(JSON.stringify(resp.data));
+          }
+        }
+      } else {
+        setErrorMessage('Failed to save invoice');
+      }
     } finally {
       setSaving(false);
     }
@@ -122,30 +151,12 @@ const InvoiceForm = () => {
     const p = products.find(x => x._id === productId);
     if (!p) return;
     const qty = Number(productQty) || 1;
-    // Prevent adding if product out of stock
-    if (typeof p.quantity === 'number' && p.quantity <= 0) {
-      setProductMessage('Cannot add product: out of stock');
-      setTimeout(() => setProductMessage(''), 3000);
-      return;
-    }
-    // Prevent adding if requested qty exceeds stock (if stock provided)
-    if (typeof p.quantity === 'number' && qty > p.quantity) {
-      setProductMessage(`Requested quantity (${qty}) exceeds stock (${p.quantity})`);
-      setTimeout(() => setProductMessage(''), 3000);
-      return;
-    }
 
     // If product already exists in items (by productId), increment quantity
     const existingIndex = (items || []).findIndex(it => it.productId === productId);
     if (existingIndex > -1) {
       const existing = items[existingIndex];
       const newQty = Number(existing.quantity || 0) + qty;
-      // ensure not exceeding stock
-      if (typeof p.quantity === 'number' && newQty > p.quantity) {
-        setProductMessage(`Total quantity (${newQty}) exceeds stock (${p.quantity})`);
-        setTimeout(() => setProductMessage(''), 3000);
-        return;
-      }
       setValue(`items.${existingIndex}.quantity`, newQty);
       setValue(`items.${existingIndex}.rate`, p.rate);
       setValue(`items.${existingIndex}.taxRate`, p.taxRate || 0);
@@ -177,6 +188,12 @@ const InvoiceForm = () => {
           </button>
         </div>
 
+        {errorMessage && (
+          <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg">
+            <strong>Error:</strong> {errorMessage}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
@@ -187,7 +204,7 @@ const InvoiceForm = () => {
                     <select className="form-input" value={productId} onChange={e=>setProductId(e.target.value)}>
                       <option value="">-- Select product --</option>
                       {products.map(p => (
-                        <option key={p._id} value={p._id}>{p.name} — ₹{Number(p.rate).toFixed(2)} ({Number(p.taxRate||0)}%) {typeof p.quantity === 'number' ? `— stock: ${p.quantity}` : ''}</option>
+                        <option key={p._id} value={p._id}>{p.name} — ₹{Number(p.rate).toFixed(2)} ({Number(p.taxRate||0)}%)</option>
                       ))}
                     </select>
                     <input type="number" min={1} className="form-input w-24" value={productQty} onChange={e=>setProductQty(e.target.value)} />
@@ -210,11 +227,22 @@ const InvoiceForm = () => {
                 </div>
                 <div>
                   <label className="form-label">Issue Date</label>
-                  <input type="date" className="form-input" {...register('issueDate', { required: true })} />
+                  <input type="date" className="form-input" {...register('issueDate', { required: 'Issue date is required' })} />
+                  {errors.issueDate && <p className="text-sm text-red-600 mt-1">{errors.issueDate.message}</p>}
                 </div>
                 <div>
                   <label className="form-label">Due Date</label>
-                  <input type="date" className="form-input" {...register('dueDate', { required: true })} />
+                  <input type="date" className="form-input" {...register('dueDate', {
+                    required: 'Due date is required',
+                    validate: value => {
+                      const issueValue = watch('issueDate');
+                      if (!issueValue) return true; // issueDate validation will handle missing
+                      const issue = new Date(issueValue);
+                      const due = new Date(value);
+                      return due >= issue || 'Due date must be the same or after issue date';
+                    }
+                  })} />
+                  {errors.dueDate && <p className="text-sm text-red-600 mt-1">{errors.dueDate.message}</p>}
                 </div>
                 <div>
                   <label className="form-label">Payment Terms</label>
